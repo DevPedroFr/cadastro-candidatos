@@ -13,7 +13,7 @@ def conectar_banco():
     try:    
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        return cursor, conn
+        return conn, cursor
     except:
         return None, None
     

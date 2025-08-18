@@ -33,7 +33,7 @@ def criar_database():
 def criar_tabela_candidatos():
     conn, cursor = conectar_banco()
 
-    if not conn:
+    if not conn or not cursor:
         print ('Erro na conexão')
         return False
     

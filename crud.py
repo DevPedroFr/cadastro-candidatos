@@ -1,180 +1,243 @@
 from db import conectar_banco, desconectar_banco
 import psycopg2
+from datetime import datetime
 
-def cadastar_candidato(nome, email, telefone=None, experiencia=None):
+def converter_datetime_para_string(dados):
+    if isinstance(dados, dict):
+        for chave, valor in dados.items():
+            if isinstance(valor, datetime):
+                dados[chave] = valor.isoformat()
+    return dados
+
+def cadastrar_candidato(nome, email, telefone=None, experiencia=None):    
     conn, cursor = conectar_banco()
-
-    if not conn:
-        return {"erro": "Falha ao se conectar"}
+    
+    if not conn or not cursor:
+        return {"erro": "Não conseguiu conectar no banco de dados"}
     
     sql = """
     INSERT INTO candidatos (nome, email, telefone, experiencia)
     VALUES (%s, %s, %s, %s)
     RETURNING id, nome, email, telefone, experiencia, data_cadastro
     """
+    
     try:
         cursor.execute(sql, (nome, email, telefone, experiencia))
         resultado = cursor.fetchone()
+        
+        if not resultado:        
+            return {"erro": "INSERT falhou - nenhum dado retornado"}
+        
         conn.commit()
-
-        print(f'candidato {nome} cadstrado com id {resultado ['id']}')
-        return dict(resultado)
+        
+        dict_resultado = dict(resultado)
+        
+        dict_resultado = converter_datetime_para_string(dict_resultado)
+        
+        print(f"✅ Candidato criado com ID {dict_resultado['id']}")
+        return dict_resultado
+        
+    except psycopg2.IntegrityError as erro:
+        conn.rollback()
+        if "unique" in str(erro).lower():
+            return {"erro": "Email já existe no sistema"}
+        else:
+            return {"erro": f"Violação de integridade: {erro}"}
     
-    except psycopg2.Error as e:
-       conn.rollback()
-       print(f'erro {e}') 
+    except psycopg2.Error as erro:
+        conn.rollback()
+        return {"erro": f"Erro no banco de dados: {str(erro)}"}
+    
+    except Exception as erro:
+        if conn:
+            conn.rollback()
+        return {"erro": f"Erro interno: {str(erro)}"}
+    
     finally:
-        desconectar_banco(conn.cursor)
+        desconectar_banco(conn, cursor)
 
 def listar_candidatos():
     conn, cursor = conectar_banco()
-
-    if not conn:
+    
+    if not conn or not cursor:
         return []
-
+    
     try:
         cursor.execute("SELECT * FROM candidatos ORDER BY data_cadastro DESC")
-
         candidatos = cursor.fetchall()
-
-        lista = [dict(candidato) for candidato in candidatos]
-
-        print(f'encontrados {len(lista)} candidatos')
+        
+        if not candidatos:
+            return []
+        
+        lista = []
+        for candidato in candidatos:
+            dict_candidato = dict(candidato)
+            dict_candidato = converter_datetime_para_string(dict_candidato)
+            lista.append(dict_candidato)
+        
         return lista
-    
-    except psycopg2.Error as e:
-        print(f'erro: {e}')
+        
+    except psycopg2.Error as erro:
         return []
+    
+    except Exception as erro:
+        return []
+    
     finally:
-        desconectar_banco(conn,cursor)
+        desconectar_banco(conn, cursor)
 
 def buscar_candidato_por_id(candidato_id):
     conn, cursor = conectar_banco()
-
-    if not conn:
-        return None
-
-    try:
-        cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id))
-
-        candidato =  cursor.fetchone()
-
-        if candidato:
-            print('sucesso')
-            return dict(candidato)
-        
-        else:
-            print('erro')
-            return None
     
-    except psycopg2.Error as e:
-        print(f'erro: {e}')
+    if not conn or not cursor:
+        return None
+    
+    try:
+        cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id,))
+        candidato = cursor.fetchone()
+        
+        if candidato:
+            dict_candidato = dict(candidato)
+            dict_candidato = converter_datetime_para_string(dict_candidato)
+            return dict_candidato
+        else:
+            return None
+            
+    except psycopg2.Error as erro:
+        return None
+    
+    except Exception as erro:
+        return None
     
     finally:
-        desconectar_banco(conn,cursor)
+        desconectar_banco(conn, cursor)
 
-def atualizar_candidato(candidato_id, nome=None, email=None, telefone=None, experiencia=None ):
+def atualizar_candidato(candidato_id, nome=None, email=None, telefone=None, experiencia=None):
     conn, cursor = conectar_banco()
-
-    if not conn:
+    
+    if not conn or not cursor:
         return False
-
+    
     campos_atualizacao = []
-    valores =[]
-
+    valores = []
+    
     if nome is not None:
         campos_atualizacao.append("nome = %s")
         valores.append(nome)
     if email is not None:
-        campos_atualizacao.append("email=%s")
+        campos_atualizacao.append("email = %s")
+        valores.append(email)
     if telefone is not None:
         campos_atualizacao.append("telefone = %s")
+        valores.append(telefone)
     if experiencia is not None:
         campos_atualizacao.append("experiencia = %s")
-
-    if not campos_atualizacao:
-        print('nenhum campo para atualizar')
-        desconectar_banco(conn,cursor)
-        return False
-
-    valores.append(candidato_id)
+        valores.append(experiencia)
     
-    sql = f"UPDATE candidatos SET {','.join(campos_atualizacao)} WHERE id= %s"
-
+    if not campos_atualizacao:
+        desconectar_banco(conn, cursor)
+        return False
+    
+    valores.append(candidato_id)
+    sql = f"UPDATE candidatos SET {', '.join(campos_atualizacao)} WHERE id = %s"
+    
     try:
         cursor.execute(sql, valores)
         conn.commit()
-
+        
         if cursor.rowcount > 0:
-            print(f'candidato ID {candidato_id} atualizado com sucesso')
             return True
         else:
-            print(f'candidato ID {candidato_id} não encontrado')
             return False
-    except psycopg2.Error as e:
+            
+    except psycopg2.Error as erro:
         conn.rollback()
-        print(f'erro {e}')
+        return False
+    
+    except Exception as erro:
+        if conn:
+            conn.rollback()
+        return False
+    
     finally:
         desconectar_banco(conn, cursor)
-    
-def excluir_candidato(candidato_id):
+
+def excluir_candidato(candidato_id):    
     conn, cursor = conectar_banco()
-
-    if not conn:
+    
+    if not conn or not cursor:
         return False
-
+    
     try:
-        cursor.execute("DELETE FROM candidatos WHERE id = %s")
+        cursor.execute("DELETE FROM candidatos WHERE id = %s", (candidato_id,))
         conn.commit()
-
+        
         if cursor.rowcount > 0:
-            print(f'candidato {candidato_id} deletado')
             return True
         else:
-            print(f'candidato {candidato_id} não encontrado')
             return False
-    except psycopg2.Error as e:
+            
+    except psycopg2.Error as erro:
         conn.rollback()
-        print(f'erro {e}')
         return False
+    
+    except Exception as erro:
+        if conn:
+            conn.rollback()
+        return False
+    
     finally:
         desconectar_banco(conn, cursor)
 
 def contar_candidatos():
     conn, cursor = conectar_banco()
-
-    if not conn:
+    
+    if not conn or not cursor:
         return 0
     
     try:
         cursor.execute("SELECT COUNT(*) FROM candidatos")
         resultado = cursor.fetchone()
-
-        total = resultado[0]
-        print(f'Total de candidatos: {total}')
+        
+        total = resultado[0] if resultado else 0
         return total
-    except psycopg2.Error as e:
-        print(f'erro{e}')
+        
+    except psycopg2.Error as erro:
         return 0
+    
+    except Exception as erro:
+        return 0
+    
     finally:
-        desconectar_banco(conn,cursor)
+        desconectar_banco(conn, cursor)
 
 def buscar_candidatos_por_email(email):
     conn, cursor = conectar_banco()
-
-    if not conn:
+    
+    if not conn or not cursor:
         return []
-
+    
     try:
-        cursor.execute("SELECT * FROM candidatos WHERE LOWER(email) = LOWER(%s)", (email))
+        cursor.execute("SELECT * FROM candidatos WHERE LOWER(email) = LOWER(%s)", (email,))
         candidatos = cursor.fetchall()
-
-        lista = [dict(candidato) for candidato in candidatos]
-        print(f"encontrados{len(lista)} candidatos com email '{email}'")
+        
+        if not candidatos:
+            return []
+    
+        lista = []
+        for candidato in candidatos:
+            dict_candidato = dict(candidato)
+            dict_candidato = converter_datetime_para_string(dict_candidato)
+            lista.append(dict_candidato)
+        
+        print(f"🔍 Encontrados {len(lista)} candidatos com email '{email}'")
         return lista
-    except psycopg2.error as e:
-        print(f'erro {e}')
+        
+    except psycopg2.Error as erro:
         return []
+    
+    except Exception as erro:
+        return []
+    
     finally:
         desconectar_banco(conn, cursor)
-    

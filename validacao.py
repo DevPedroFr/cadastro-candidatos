@@ -56,7 +56,7 @@ def validar_telefone(telefone:str)-> Tuple[bool,str]:
     
     return True, "Telefone válido"
 
-def validar_experiência(experiencia: str) -> Tuple[bool, str]:
+def validar_experiencia(experiencia: str) -> Tuple[bool, str]:
     if not experiencia:
         return True
     
@@ -73,4 +73,59 @@ def validar_experiência(experiencia: str) -> Tuple[bool, str]:
 def validar_senha(senha: str) -> Tuple[bool, str]:
     if not senha:
         return False, "senha é obrigatória"
+    
+def validar_id(id_valor)-> Tuple[bool, str]:
+    try:
+        id_numero = int(id_valor)
+
+        if id_numero <= 0:
+            return False, "ID deve ser número positivo"
+    
+        return True, 'id válido'
+    except(ValueError, TypeError):
+        return False, "id deve ser um número"
+    
+    
+def validar_candidato_completo(nome: str, email:str, telefone: str= None, experiencia: str=None)-> Tuple[bool, List[str]]:
+    erros = []
+
+    nome_valido , msg_nome = validar_nome(nome)
+    if not nome_valido:
+        erros.append(f'Nome {msg_nome}')
+
+    email_valido, msg_email = validar_email(email)
+    if not email_valido:
+        erros.append(f'Email: {msg_email}')
+    
+    telefone_valido, msg_telefone = validar_telefone(telefone)
+    if not telefone_valido:
+       erros.append(f'telefone{msg_telefone}')
+
+    experiencia_valida, msg_experiencia = validar_experiencia(experiencia) 
+    if not experiencia_valida:
+        erros.append(f'experiencia{msg_experiencia}')
+
+    if not erros:
+        return True, ['Todos os dados são válidos']
+    else:
+        return False, erros
+    
+def limpar_dados_candidato(nome:  str, email:str, telefone: str = None, experiencia: str = None) -> dict:
+    dados_limpos = {}
+
+    if nome:
+        dados_limpos['nome'] =  nome.strip().title()
+    
+    if email:
+        dados_limpos['email'] = email.strip().lower()
+
+    if telefone:
+        telefone_limpo = re.sub(r'[^\d]', '', telefone.strip())
+        dados_limpos['telefone'] = telefone_limpo
+
+    if experiencia:
+        dados_limpos['experiencia'] = experiencia.strip()
+
+    return dados_limpos
+
     

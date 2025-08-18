@@ -68,7 +68,7 @@ def verificar_estrutura():
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-    """)
+        """)
         tabelas = cursor.fetchall()
 
         print('tabelas no banco:')

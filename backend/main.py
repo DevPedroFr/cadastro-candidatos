@@ -180,7 +180,7 @@ async def startup_event():
 
     if sucesso:
         print('api pronta')
-        print('documentação: http://localhost:8000/dsocs')
+        print('documentação: http://localhost:8000/docs')
 
 @app.on_event("shutdown")
 async def shutdown_event():

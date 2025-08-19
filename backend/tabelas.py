@@ -106,6 +106,26 @@ def main():
     print('concluído')
     return True
 
-if __name__ == "__main__":
-    main()
+def testar_tabela():
+    print("teste de estrutura")
+    
+    print("Teste de database:")
+    db_ok = criar_database()
+    print(f"Database criado/verificado: {db_ok}")
+    
+    print("Teste de tabela:")
+    tabela_ok = criar_tabela_candidatos()
+    print(f"Tabela criada/verificada: {tabela_ok}")
+    
+    print("Verificação da estrutura:")
+    estrutura_ok = verificar_estrutura()
+    print(f"Estrutura verificada: {estrutura_ok}")
+    
+    print("Teste de conexão:")
+    from crud import contar_candidatos
+    try:
+        total = contar_candidatos()
+        print(f"Conexão OK - Total de candidatos: {total}")
+    except Exception as e:
+        print(f"Erro de conexão: {e}")
 

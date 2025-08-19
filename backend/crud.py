@@ -34,7 +34,6 @@ def cadastrar_candidato(nome, email, telefone=None, experiencia=None):
         
         dict_resultado = converter_datetime_para_string(dict_resultado)
         
-        print(f"✅ Candidato criado com ID {dict_resultado['id']}")
         return dict_resultado
         
     except psycopg2.IntegrityError as erro:
@@ -241,3 +240,22 @@ def buscar_candidatos_por_email(email):
     
     finally:
         desconectar_banco(conn, cursor)
+
+def teste_crud():
+    print('testes de CRUD')
+
+    print('teste de cadastro bem sucedido')
+    resultado = cadastrar_candidato('Mario Rossi', 'mario@test.com', '11957475837', 'Dev Python')
+    print(f'Resultado: {resultado}')
+
+    print('Teste de email duplicado')
+    resultado_dup = cadastrar_candidato('Armario jose', 'mario@test.com', '11485744933')
+    print(f'Resultado: {resultado_dup}')
+
+    print('Teste de listagem:')
+    candidatos = listar_candidatos()
+    print(f'Total encontrados: {len(candidatos)}')
+
+    print('Teste de contagem')
+    total = contar_candidatos()
+    print(f'total no banco : {total}')

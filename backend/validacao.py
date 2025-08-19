@@ -128,4 +128,32 @@ def limpar_dados_candidato(nome:  str, email:str, telefone: str = None, experien
 
     return dados_limpos
 
+def testar_validacao():
+    print('teste de validação')
+    
+    print("Validações bem-sucedidas:")
+    nome_ok, msg = validar_nome("Pedro Silva")
+    print(f"Nome válido: {nome_ok} - {msg}")
+    
+    email_ok, msg = validar_email("pedro@gmail.com")
+    print(f"Email válido: {email_ok} - {msg}")
+    
+    tel_ok, msg = validar_telefone("11999887766")
+    print(f"Telefone válido: {tel_ok} - {msg}")
+    
+    print("Validações mal-sucedidas:")
+    nome_erro, msg = validar_nome("A")
+    print(f"Nome inválido: {nome_erro} - {msg}")
+    
+    email_erro, msg = validar_email("email_invalido")
+    print(f"Email inválido: {email_erro} - {msg}")
+    
+    tel_erro, msg = validar_telefone("123")
+    print(f"Telefone inválido: {tel_erro} - {msg}")
+    
+    print("Validação completa:")
+    valido, erros = validar_candidato_completo("", "email_ruim", "123", "abc")
+    print(f"Válido: {valido}")
+    print(f"Erros: {erros}")
+
     

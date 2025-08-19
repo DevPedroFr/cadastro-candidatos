@@ -6,20 +6,22 @@ import uvicorn
 from datetime import datetime
 
 from crud import (
+    teste_crud,
     cadastrar_candidato,
     listar_candidatos,
     buscar_candidato_por_id,
     atualizar_candidato,
     excluir_candidato,
     contar_candidatos,
-    buscar_candidatos_por_email
+    buscar_candidatos_por_email 
 )
 from validacao import (
+    testar_validacao,
     validar_candidato_completo,
     validar_id,
     limpar_dados_candidato
 )
-from tabelas import main
+from tabelas import main, testar_tabela
 
 app = FastAPI(
     title="API Sistema de Candidatos",
@@ -174,13 +176,35 @@ class EstatisticasResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     print('Iniciando api')
-    print('horário: {datetime.now()}')
+    print(f'horário: {datetime.now()}')
 
     sucesso = main()
 
     if sucesso:
-        print('api pronta')
-        print('documentação: http://localhost:8000/docs')
+        print('Tabelas criadas e verificadas')
+
+        print('executando teste de CRUD')
+        try:
+            teste_crud()
+            print('Teste CRUD concluído')
+        except Exception as e:
+            print(f'Erro no teste CRUD: {e}')
+        
+        print('Executando teste de validações')
+        try:
+            testar_validacao()
+            print('testes de validação ok')
+        except Exception as e:
+            print(f'erro: {e}')
+        
+        print('executando teste de estrutura')
+        try:
+            testar_tabela()
+            print('teste de estrutura ok')
+        except Exception as e:
+            print(f'erro: {e}')
+    else:
+        print('Falha ao criar ou verificar tabelas') 
 
 @app.on_event("shutdown")
 async def shutdown_event():

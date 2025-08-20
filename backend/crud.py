@@ -13,6 +13,7 @@ def cadastrar_candidato(nome, email, telefone=None, experiencia=None):
     conn, cursor = conectar_banco()
     
     if not conn or not cursor:
+        print('Erro: Falha na conexão com o banco de dados')
         return {"erro": "Não conseguiu conectar no banco de dados"}
     
     sql = """
@@ -25,10 +26,12 @@ def cadastrar_candidato(nome, email, telefone=None, experiencia=None):
         cursor.execute(sql, (nome, email, telefone, experiencia))
         resultado = cursor.fetchone()
         
-        if not resultado:        
+        if not resultado:  
+            print('Erro: Insert falhou - nenhum dado retornado')      
             return {"erro": "INSERT falhou - nenhum dado retornado"}
         
         conn.commit()
+        print(f'Candidato cadastrado com sucesso: id {resultado["id"]}')
         
         dict_resultado = dict(resultado)
         
@@ -37,6 +40,7 @@ def cadastrar_candidato(nome, email, telefone=None, experiencia=None):
         return dict_resultado
         
     except psycopg2.IntegrityError as erro:
+        print(f'Erro, email duplicado - {email}')
         conn.rollback()
         if "unique" in str(erro).lower():
             return {"erro": "Email já existe no sistema"}
@@ -44,6 +48,7 @@ def cadastrar_candidato(nome, email, telefone=None, experiencia=None):
             return {"erro": f"Violação de integridade: {erro}"}
     
     except psycopg2.Error as erro:
+        print(f'Erro BANCO: {str(erro)}')
         conn.rollback()
         return {"erro": f"Erro no banco de dados: {str(erro)}"}
     
